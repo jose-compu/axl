@@ -1,0 +1,29 @@
+[workspace]
+members = [
+  "crates/axl_cli",
+  "crates/axl_parser",
+  "crates/axl_core",
+  "crates/axl_aria",
+  "crates/axl_rules",
+  "crates/axl_contrast",
+  "crates/axl_patterns",
+  "crates/axl_config",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+license = "MIT"
+version = "0.1.0"
+
+[workspace.dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive"] }
+glob = "0.3"
+ignore = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+oxc_allocator = "0.57"
+oxc_parser = "0.57"
+oxc_span = "0.57"

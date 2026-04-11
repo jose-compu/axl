@@ -1,0 +1,13 @@
+[package]
+name = "axl_parser"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow.workspace = true
+axl_core = { path = "../axl_core" }
+glob.workspace = true
+ignore.workspace = true
+oxc_allocator.workspace = true
+oxc_parser.workspace = true
+oxc_span.workspace = true

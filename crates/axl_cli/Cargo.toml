@@ -1,0 +1,13 @@
+[package]
+name = "axl_cli"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow.workspace = true
+axl_config = { path = "../axl_config" }
+axl_core = { path = "../axl_core" }
+axl_parser = { path = "../axl_parser" }
+axl_rules = { path = "../axl_rules" }
+clap.workspace = true
+serde_json.workspace = true

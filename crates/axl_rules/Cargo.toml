@@ -1,0 +1,10 @@
+[package]
+name = "axl_rules"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axl_aria = { path = "../axl_aria" }
+axl_contrast = { path = "../axl_contrast" }
+axl_core = { path = "../axl_core" }
+axl_patterns = { path = "../axl_patterns" }
