@@ -51,4 +51,37 @@ mod tests {
         let result = lint_file(&file, None);
         assert_eq!(result.diagnostics.len(), 3);
     }
+
+    #[test]
+    fn only_categories_filters_results() {
+        let file = LintFile {
+            path: "fixture.tsx".to_string(),
+            source: r#"
+                <div role="widget" />
+                <button aria-label="   " tabIndex={3} />
+            "#
+            .to_string(),
+        };
+        let only = vec!["roles".to_string()];
+
+        let result = lint_file(&file, Some(&only));
+        assert_eq!(result.diagnostics.len(), 1);
+        assert_eq!(result.diagnostics[0].rule_id, "roles/abstract-role-usage");
+    }
+
+    #[test]
+    fn unknown_only_category_returns_no_results() {
+        let file = LintFile {
+            path: "fixture.tsx".to_string(),
+            source: r#"
+                <div role="widget" />
+                <button aria-label="   " tabIndex={3} />
+            "#
+            .to_string(),
+        };
+        let only = vec!["not-a-category".to_string()];
+
+        let result = lint_file(&file, Some(&only));
+        assert!(result.diagnostics.is_empty());
+    }
 }
