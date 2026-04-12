@@ -2,6 +2,9 @@
 name = "axl_aria"
 version = "0.1.0"
 edition = "2024"
+description = "ARIA role and accessible-name helpers for axl."
+license = "MIT"
+repository = "https://github.com/jose-compu/axl"
 
 [dependencies]
 axl_core = { version = "0.1.0", path = "../axl_core" }

@@ -2,6 +2,9 @@
 name = "axl_parser"
 version = "0.1.0"
 edition = "2024"
+description = "JSX/TSX target discovery and parsing pipeline for axl."
+license = "MIT"
+repository = "https://github.com/jose-compu/axl"
 
 [dependencies]
 anyhow.workspace = true

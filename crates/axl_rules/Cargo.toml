@@ -2,6 +2,9 @@
 name = "axl_rules"
 version = "0.1.0"
 edition = "2024"
+description = "Accessibility rule implementations and registry for axl."
+license = "MIT"
+repository = "https://github.com/jose-compu/axl"
 
 [dependencies]
 axl_aria = { version = "0.1.0", path = "../axl_aria" }

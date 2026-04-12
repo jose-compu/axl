@@ -2,6 +2,9 @@
 name = "axl_cli"
 version = "0.1.0"
 edition = "2024"
+description = "Command-line interface for axl accessibility linting."
+license = "MIT"
+repository = "https://github.com/jose-compu/axl"
 
 [dependencies]
 anyhow.workspace = true
