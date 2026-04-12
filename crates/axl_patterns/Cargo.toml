@@ -4,4 +4,4 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-axl_core = { path = "../axl_core" }
+axl_core = { version = "0.1.0", path = "../axl_core" }
