@@ -1,6 +1,6 @@
 [package]
 name = "axl_parser"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 description = "JSX/TSX target discovery and parsing pipeline for axl."
 license = "MIT"
@@ -8,7 +8,7 @@ repository = "https://github.com/jose-compu/axl"
 
 [dependencies]
 anyhow.workspace = true
-axl_core = { version = "0.1.0", path = "../axl_core" }
+axl_core = { version = "0.2.0", path = "../axl_core" }
 glob.workspace = true
 ignore.workspace = true
 oxc_allocator.workspace = true

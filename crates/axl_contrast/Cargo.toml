@@ -1,10 +1,10 @@
 [package]
 name = "axl_contrast"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 description = "WCAG contrast utilities and color analysis scaffolding for axl."
 license = "MIT"
 repository = "https://github.com/jose-compu/axl"
 
 [dependencies]
-axl_core = { version = "0.1.0", path = "../axl_core" }
+axl_core = { version = "0.2.0", path = "../axl_core" }
