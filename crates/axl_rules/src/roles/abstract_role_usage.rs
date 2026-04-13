@@ -34,3 +34,34 @@ impl Rule for AbstractRoleUsageRule {
         out
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::AbstractRoleUsageRule;
+    use axl_core::{LintFile, Rule};
+
+    #[test]
+    fn reports_abstract_roles() {
+        let rule = AbstractRoleUsageRule;
+        let file = LintFile {
+            path: "fixture.tsx".to_string(),
+            source: "<div role=\"widget\" />".to_string(),
+        };
+
+        let diagnostics = rule.run(&file);
+        assert_eq!(diagnostics.len(), 1);
+        assert_eq!(diagnostics[0].rule_id, "roles/abstract-role-usage");
+    }
+
+    #[test]
+    fn ignores_non_abstract_roles() {
+        let rule = AbstractRoleUsageRule;
+        let file = LintFile {
+            path: "fixture.tsx".to_string(),
+            source: "<div role=\"dialog\" />".to_string(),
+        };
+
+        let diagnostics = rule.run(&file);
+        assert!(diagnostics.is_empty());
+    }
+}
