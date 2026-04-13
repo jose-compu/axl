@@ -17,6 +17,10 @@ pub fn lint_file(file: &LintFile, only_categories: Option<&[String]>) -> LintRes
     result
 }
 
+pub fn autofix_file_source(source: &str) -> (String, usize) {
+    focus::tabindex_positive::autofix_positive_tabindex(source)
+}
+
 fn category_allowed(category: Category, only_categories: Option<&[String]>) -> bool {
     match only_categories {
         None => true,
@@ -34,7 +38,7 @@ fn registry() -> Vec<Box<dyn Rule>> {
 
 #[cfg(test)]
 mod tests {
-    use super::lint_file;
+    use super::{autofix_file_source, lint_file};
     use axl_core::LintFile;
 
     #[test]
@@ -83,5 +87,14 @@ mod tests {
 
         let result = lint_file(&file, Some(&only));
         assert!(result.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn autofix_updates_positive_tabindex_values() {
+        let source = "<button tabIndex={5} /><div tabindex={2} /><a tabIndex={index} />";
+        let (fixed, applied) = autofix_file_source(source);
+
+        assert_eq!(applied, 2);
+        assert_eq!(fixed, "<button tabIndex={0} /><div tabindex={0} /><a tabIndex={index} />");
     }
 }

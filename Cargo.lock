@@ -87,14 +87,14 @@ checksum = "c08606f8c3cbf4ce6ec8e28fb0014a2c086708fe954eaa885384a6165172e7e8"
 
 [[package]]
 name = "axl_aria"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axl_core",
 ]
 
 [[package]]
 name = "axl_cli"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "axl_config",
@@ -107,7 +107,7 @@ dependencies = [
 
 [[package]]
 name = "axl_config"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "serde",
@@ -116,21 +116,21 @@ dependencies = [
 
 [[package]]
 name = "axl_contrast"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axl_core",
 ]
 
 [[package]]
 name = "axl_core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "axl_parser"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "axl_core",
@@ -143,14 +143,14 @@ dependencies = [
 
 [[package]]
 name = "axl_patterns"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axl_core",
 ]
 
 [[package]]
 name = "axl_rules"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axl_aria",
  "axl_contrast",

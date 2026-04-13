@@ -2,9 +2,11 @@ use anyhow::{Context, Result};
 use axl_config::AxlConfig;
 use axl_core::Diagnostic;
 use axl_parser::{collect_lint_targets, load_and_parse_files};
-use axl_rules::lint_file;
+use axl_rules::{autofix_file_source, lint_file};
 use clap::{Parser, ValueEnum};
 use std::collections::BTreeMap;
+use std::fs;
+use std::path::PathBuf;
 
 #[derive(Debug, Clone, ValueEnum)]
 enum OutputFormat {
@@ -24,12 +26,19 @@ struct Cli {
     only: Vec<String>,
     #[arg(long)]
     config: Option<String>,
+    #[arg(long)]
+    fix: bool,
 }
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
     let config = AxlConfig::load(cli.config.as_deref())?;
     let files = collect_lint_targets(&cli.paths, &config.ignore)?;
+    let fix_summary = if cli.fix {
+        Some(apply_fixes(&files)?)
+    } else {
+        None
+    };
     let parsed_files = load_and_parse_files(&files).context("Failed to parse lint targets")?;
     let only = if cli.only.is_empty() {
         None
@@ -43,7 +52,7 @@ fn main() -> Result<()> {
     }
 
     match cli.format {
-        OutputFormat::Text => print_text(&diagnostics, files.len()),
+        OutputFormat::Text => print_text(&diagnostics, files.len(), fix_summary),
         OutputFormat::Json => print_json(&diagnostics)?,
     }
 
@@ -55,7 +64,7 @@ fn print_json(diagnostics: &[Diagnostic]) -> Result<()> {
     Ok(())
 }
 
-fn print_text(diagnostics: &[Diagnostic], files_checked: usize) {
+fn print_text(diagnostics: &[Diagnostic], files_checked: usize, fix_summary: Option<FixSummary>) {
     let mut by_file: BTreeMap<&str, Vec<&Diagnostic>> = BTreeMap::new();
     let mut errors = 0usize;
     let mut warnings = 0usize;
@@ -86,4 +95,39 @@ fn print_text(diagnostics: &[Diagnostic], files_checked: usize) {
         errors,
         warnings
     );
+
+    if let Some(summary) = fix_summary {
+        println!(
+            "Autofix applied {} changes across {} files.",
+            summary.fixes_applied, summary.files_touched
+        );
+    }
+}
+
+#[derive(Clone, Copy)]
+struct FixSummary {
+    fixes_applied: usize,
+    files_touched: usize,
+}
+
+fn apply_fixes(files: &[PathBuf]) -> Result<FixSummary> {
+    let mut files_touched = 0usize;
+    let mut fixes_applied = 0usize;
+
+    for path in files {
+        let source = fs::read_to_string(path)
+            .with_context(|| format!("Failed reading {} for autofix", path.display()))?;
+        let (fixed, applied) = autofix_file_source(&source);
+        if applied > 0 {
+            fs::write(path, fixed)
+                .with_context(|| format!("Failed writing autofix output to {}", path.display()))?;
+            files_touched += 1;
+            fixes_applied += applied;
+        }
+    }
+
+    Ok(FixSummary {
+        fixes_applied,
+        files_touched,
+    })
 }

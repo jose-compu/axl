@@ -2,7 +2,7 @@
 
 `axl` is a Rust workspace for accessibility linting of JSX/TSX code.
 
-Current v0.1 focus:
+Current v0.2 focus:
 - runnable CLI (`axl_cli`)
 - parser/discovery pipeline (`axl_parser`)
 - shared diagnostics/rule engine interfaces (`axl_core`)
@@ -59,6 +59,12 @@ Use explicit config path:
 cargo run -p axl_cli -- src --config axl.config.json
 ```
 
+Apply basic autofix (currently `focus/tabindex-positive` only):
+
+```bash
+cargo run -p axl_cli -- . --fix
+```
+
 ## Current implemented rules
 
 - `roles/abstract-role-usage` (error)
@@ -90,10 +96,10 @@ Example:
 }
 ```
 
-## Scope limitations (v0.1)
+## Scope limitations (v0.2)
 
 - no full AccName 1.2 implementation
 - no context-dependent implicit role algorithm
 - no CSS parsing/resolution
 - no cross-file component tree analysis
-- no autofix
+- limited autofix scope (currently `focus/tabindex-positive` only)

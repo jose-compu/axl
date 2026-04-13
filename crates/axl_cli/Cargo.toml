@@ -1,6 +1,6 @@
 [package]
 name = "axl_cli"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 description = "Command-line interface for axl accessibility linting."
 license = "MIT"
@@ -8,9 +8,9 @@ repository = "https://github.com/jose-compu/axl"
 
 [dependencies]
 anyhow.workspace = true
-axl_config = { version = "0.1.0", path = "../axl_config" }
-axl_core = { version = "0.1.0", path = "../axl_core" }
-axl_parser = { version = "0.1.0", path = "../axl_parser" }
-axl_rules = { version = "0.1.0", path = "../axl_rules" }
+axl_config = { version = "0.2.0", path = "../axl_config" }
+axl_core = { version = "0.2.0", path = "../axl_core" }
+axl_parser = { version = "0.2.0", path = "../axl_parser" }
+axl_rules = { version = "0.2.0", path = "../axl_rules" }
 clap.workspace = true
 serde_json.workspace = true
