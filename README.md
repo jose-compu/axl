@@ -31,6 +31,10 @@ Run checks:
 cargo test
 ```
 
+Detailed docs:
+- `docs/testing.md`
+- `docs/publishing.md`
+
 Lint current directory:
 
 ```bash

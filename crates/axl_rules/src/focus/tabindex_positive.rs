@@ -39,3 +39,34 @@ impl Rule for TabindexPositiveRule {
         out
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::TabindexPositiveRule;
+    use axl_core::{LintFile, Rule};
+
+    #[test]
+    fn reports_positive_tabindex_values() {
+        let rule = TabindexPositiveRule;
+        let file = LintFile {
+            path: "fixture.tsx".to_string(),
+            source: "<button tabIndex={3} /><div tabindex={1} />".to_string(),
+        };
+
+        let diagnostics = rule.run(&file);
+        assert_eq!(diagnostics.len(), 2);
+        assert!(diagnostics.iter().all(|d| d.rule_id == "focus/tabindex-positive"));
+    }
+
+    #[test]
+    fn ignores_zero_negative_and_non_numeric_tabindex() {
+        let rule = TabindexPositiveRule;
+        let file = LintFile {
+            path: "fixture.tsx".to_string(),
+            source: "<button tabIndex={0} /><div tabindex={-1} /><a tabIndex={idx} />".to_string(),
+        };
+
+        let diagnostics = rule.run(&file);
+        assert!(diagnostics.is_empty());
+    }
+}

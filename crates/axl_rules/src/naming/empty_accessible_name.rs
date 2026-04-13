@@ -36,3 +36,34 @@ impl Rule for EmptyAccessibleNameRule {
         out
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::EmptyAccessibleNameRule;
+    use axl_core::{LintFile, Rule};
+
+    #[test]
+    fn reports_empty_aria_label_and_title() {
+        let rule = EmptyAccessibleNameRule;
+        let file = LintFile {
+            path: "fixture.tsx".to_string(),
+            source: "<button aria-label=\"  \" title=\"\n\t\" />".to_string(),
+        };
+
+        let diagnostics = rule.run(&file);
+        assert_eq!(diagnostics.len(), 2);
+        assert!(diagnostics.iter().all(|d| d.rule_id == "naming/empty-accessible-name"));
+    }
+
+    #[test]
+    fn ignores_non_empty_labels() {
+        let rule = EmptyAccessibleNameRule;
+        let file = LintFile {
+            path: "fixture.tsx".to_string(),
+            source: "<button aria-label=\"Save\" title=\"Primary action\" />".to_string(),
+        };
+
+        let diagnostics = rule.run(&file);
+        assert!(diagnostics.is_empty());
+    }
+}
