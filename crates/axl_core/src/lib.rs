@@ -32,6 +32,26 @@ impl Category {
             Self::Patterns => "patterns",
         }
     }
+
+    pub fn parse(value: &str) -> Option<Self> {
+        match value.trim().to_ascii_lowercase().as_str() {
+            "roles" => Some(Self::Roles),
+            "naming" => Some(Self::Naming),
+            "focus" => Some(Self::Focus),
+            "contrast" => Some(Self::Contrast),
+            "patterns" => Some(Self::Patterns),
+            _ => None,
+        }
+    }
+}
+
+impl Severity {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Error => "error",
+            Self::Warn => "warn",
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -59,6 +79,20 @@ impl LintResult {
     pub fn push(&mut self, diagnostic: Diagnostic) {
         self.diagnostics.push(diagnostic);
     }
+
+    pub fn error_count(&self) -> usize {
+        self.diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.severity == Severity::Error)
+            .count()
+    }
+
+    pub fn warning_count(&self) -> usize {
+        self.diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.severity == Severity::Warn)
+            .count()
+    }
 }
 
 impl Default for LintResult {
@@ -76,16 +110,24 @@ pub trait Rule {
 pub fn line_col_from_offset(source: &str, offset: usize) -> (usize, usize) {
     let mut line = 1;
     let mut col = 1;
+    let mut previous = None;
     for (idx, ch) in source.char_indices() {
         if idx >= offset {
             break;
         }
-        if ch == '\n' {
-            line += 1;
-            col = 1;
-        } else {
-            col += 1;
+        match ch {
+            '\n' if previous != Some('\r') => {
+                line += 1;
+                col = 1;
+            }
+            '\n' => {}
+            '\r' => {
+                line += 1;
+                col = 1;
+            }
+            _ => col += 1,
         }
+        previous = Some(ch);
     }
     (line, col)
 }
@@ -115,6 +157,8 @@ mod tests {
             message: "warn".to_string(),
         });
         assert_eq!(result.diagnostics.len(), 1);
+        assert_eq!(result.error_count(), 0);
+        assert_eq!(result.warning_count(), 1);
     }
 
     #[test]
@@ -122,5 +166,25 @@ mod tests {
         let (line, col) = line_col_from_offset("a\nbc\n", 3);
         assert_eq!(line, 2);
         assert_eq!(col, 2);
+    }
+
+    #[test]
+    fn computes_line_and_column_for_crlf() {
+        let (line, col) = line_col_from_offset("a\r\nbc", 4);
+        assert_eq!(line, 2);
+        assert_eq!(col, 2);
+    }
+
+    #[test]
+    fn parses_category_case_insensitively() {
+        assert_eq!(Category::parse("Roles"), Some(Category::Roles));
+        assert_eq!(Category::parse("FOCUS"), Some(Category::Focus));
+        assert_eq!(Category::parse("nope"), None);
+    }
+
+    #[test]
+    fn severity_string_values_match_expected() {
+        assert_eq!(Severity::Error.as_str(), "error");
+        assert_eq!(Severity::Warn.as_str(), "warn");
     }
 }

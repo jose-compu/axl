@@ -1,6 +1,6 @@
 [package]
 name = "axl_core"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 description = "Core diagnostics and rule interfaces for axl accessibility linting."
 license = "MIT"

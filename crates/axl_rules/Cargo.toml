@@ -1,13 +1,13 @@
 [package]
 name = "axl_rules"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2024"
 description = "Accessibility rule implementations and registry for axl."
 license = "MIT"
 repository = "https://github.com/jose-compu/axl"
 
 [dependencies]
-axl_aria = { version = "0.2.0", path = "../axl_aria" }
-axl_contrast = { version = "0.2.0", path = "../axl_contrast" }
-axl_core = { version = "0.2.0", path = "../axl_core" }
-axl_patterns = { version = "0.2.0", path = "../axl_patterns" }
+axl_aria = { version = "0.3.0", path = "../axl_aria" }
+axl_contrast = { version = "0.3.0", path = "../axl_contrast" }
+axl_core = { version = "0.3.0", path = "../axl_core" }
+axl_patterns = { version = "0.3.0", path = "../axl_patterns" }

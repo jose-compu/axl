@@ -7,6 +7,7 @@ use clap::{Parser, ValueEnum};
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::PathBuf;
+use std::process::ExitCode;
 
 #[derive(Debug, Clone, ValueEnum)]
 enum OutputFormat {
@@ -28,14 +29,28 @@ struct Cli {
     config: Option<String>,
     #[arg(long)]
     fix: bool,
+    #[arg(long)]
+    fix_dry_run: bool,
 }
 
-fn main() -> Result<()> {
+fn main() -> ExitCode {
+    match run() {
+        Ok(has_errors) if has_errors => ExitCode::from(1),
+        Ok(_) => ExitCode::SUCCESS,
+        Err(err) => {
+            eprintln!("{err:#}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+fn run() -> Result<bool> {
     let cli = Cli::parse();
     let config = AxlConfig::load(cli.config.as_deref())?;
     let files = collect_lint_targets(&cli.paths, &config.ignore)?;
-    let fix_summary = if cli.fix {
-        Some(apply_fixes(&files)?)
+    let write_fixes = cli.fix && !cli.fix_dry_run;
+    let fix_summary = if cli.fix || cli.fix_dry_run {
+        Some(apply_fixes(&files, write_fixes)?)
     } else {
         None
     };
@@ -48,15 +63,17 @@ fn main() -> Result<()> {
 
     let mut diagnostics = Vec::new();
     for parsed in &parsed_files {
-        diagnostics.extend(lint_file(&parsed, only).diagnostics);
+        diagnostics.extend(lint_file(parsed, only).diagnostics);
     }
 
     match cli.format {
-        OutputFormat::Text => print_text(&diagnostics, files.len(), fix_summary),
+        OutputFormat::Text => print_text(&diagnostics, files.len(), fix_summary, cli.fix_dry_run),
         OutputFormat::Json => print_json(&diagnostics)?,
     }
 
-    Ok(())
+    Ok(diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.severity == axl_core::Severity::Error))
 }
 
 fn print_json(diagnostics: &[Diagnostic]) -> Result<()> {
@@ -64,7 +81,12 @@ fn print_json(diagnostics: &[Diagnostic]) -> Result<()> {
     Ok(())
 }
 
-fn print_text(diagnostics: &[Diagnostic], files_checked: usize, fix_summary: Option<FixSummary>) {
+fn print_text(
+    diagnostics: &[Diagnostic],
+    files_checked: usize,
+    fix_summary: Option<FixSummary>,
+    dry_run: bool,
+) {
     let mut by_file: BTreeMap<&str, Vec<&Diagnostic>> = BTreeMap::new();
     let mut errors = 0usize;
     let mut warnings = 0usize;
@@ -82,8 +104,12 @@ fn print_text(diagnostics: &[Diagnostic], files_checked: usize, fix_summary: Opt
         println!("{file}");
         for item in values {
             println!(
-                "  {}:{}  {:?}  {}  {}",
-                item.line, item.column, item.severity, item.message, item.rule_id
+                "  {}:{}  {}  {}  {}",
+                item.line,
+                item.column,
+                item.severity.as_str(),
+                item.message,
+                item.rule_id
             );
         }
         println!();
@@ -97,8 +123,9 @@ fn print_text(diagnostics: &[Diagnostic], files_checked: usize, fix_summary: Opt
     );
 
     if let Some(summary) = fix_summary {
+        let verb = if dry_run { "would apply" } else { "applied" };
         println!(
-            "Autofix applied {} changes across {} files.",
+            "Autofix {verb} {} changes across {} files.",
             summary.fixes_applied, summary.files_touched
         );
     }
@@ -110,7 +137,7 @@ struct FixSummary {
     files_touched: usize,
 }
 
-fn apply_fixes(files: &[PathBuf]) -> Result<FixSummary> {
+fn apply_fixes(files: &[PathBuf], write: bool) -> Result<FixSummary> {
     let mut files_touched = 0usize;
     let mut fixes_applied = 0usize;
 
@@ -119,8 +146,10 @@ fn apply_fixes(files: &[PathBuf]) -> Result<FixSummary> {
             .with_context(|| format!("Failed reading {} for autofix", path.display()))?;
         let (fixed, applied) = autofix_file_source(&source);
         if applied > 0 {
-            fs::write(path, fixed)
-                .with_context(|| format!("Failed writing autofix output to {}", path.display()))?;
+            if write {
+                fs::write(path, fixed)
+                    .with_context(|| format!("Failed writing autofix output to {}", path.display()))?;
+            }
             files_touched += 1;
             fixes_applied += applied;
         }

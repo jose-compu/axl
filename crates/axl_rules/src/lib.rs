@@ -24,7 +24,9 @@ pub fn autofix_file_source(source: &str) -> (String, usize) {
 fn category_allowed(category: Category, only_categories: Option<&[String]>) -> bool {
     match only_categories {
         None => true,
-        Some(values) => values.iter().any(|value| value == category.as_str()),
+        Some(values) => values
+            .iter()
+            .any(|value| Category::parse(value) == Some(category)),
     }
 }
 
@@ -66,7 +68,7 @@ mod tests {
             "#
             .to_string(),
         };
-        let only = vec!["roles".to_string()];
+        let only = vec!["Roles".to_string()];
 
         let result = lint_file(&file, Some(&only));
         assert_eq!(result.diagnostics.len(), 1);

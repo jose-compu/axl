@@ -80,19 +80,35 @@ pub fn load_and_parse_files(paths: &[PathBuf]) -> Result<Vec<LintFile>> {
 }
 
 fn is_lint_target(path: &Path) -> bool {
-    matches!(
-        path.extension().and_then(|ext| ext.to_str()),
-        Some("jsx") | Some("tsx")
-    )
+    path.extension()
+        .and_then(|ext| ext.to_str())
+        .is_some_and(|ext| ext.eq_ignore_ascii_case("jsx") || ext.eq_ignore_ascii_case("tsx"))
 }
 
 fn is_ignored(path: &Path, ignore_patterns: &[String]) -> bool {
-    let path_str = path.to_string_lossy();
+    let path_str = path.to_string_lossy().replace('\\', "/");
+    let file_name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or_default();
     ignore_patterns.iter().any(|pattern| {
-        glob::Pattern::new(pattern)
-            .map(|compiled| compiled.matches(&path_str))
-            .unwrap_or(false)
+        let normalized = pattern.replace('\\', "/");
+        matches_ignore_pattern(&normalized, &path_str, file_name)
     })
+}
+
+fn matches_ignore_pattern(pattern: &str, path_str: &str, file_name: &str) -> bool {
+    if let Ok(compiled) = glob::Pattern::new(pattern) {
+        if compiled.matches(path_str) || compiled.matches(file_name) {
+            return true;
+        }
+    }
+    if let Some(suffix) = pattern.strip_prefix("**/") {
+        if let Ok(compiled) = glob::Pattern::new(suffix) {
+            return compiled.matches(path_str) || compiled.matches(file_name);
+        }
+    }
+    false
 }
 
 #[cfg(test)]
@@ -131,6 +147,26 @@ mod tests {
     }
 
     #[test]
+    fn collects_uppercase_jsx_tsx_extensions() {
+        let base = std::env::temp_dir().join(format!(
+            "axl_parser_case_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("system clock should be after epoch")
+                .as_nanos()
+        ));
+        fs::create_dir_all(&base).expect("create test dir");
+        fs::write(base.join("Upper.TSX"), "<div />").expect("write tsx");
+        fs::write(base.join("Upper.JSX"), "<div />").expect("write jsx");
+
+        let input = vec![base.to_string_lossy().into_owned()];
+        let files = collect_lint_targets(&input, &[]).expect("collect files");
+        assert_eq!(files.len(), 2);
+
+        let _ = fs::remove_dir_all(base);
+    }
+
+    #[test]
     fn parse_fails_for_invalid_tsx() {
         let source = "<button>".to_string();
         let parsed = parse_lint_file("broken.tsx", source);
@@ -154,6 +190,27 @@ mod tests {
         let input = vec![base.to_string_lossy().into_owned()];
         let files =
             collect_lint_targets(&input, &[format!("{}/storybook/*", base.to_string_lossy())]).expect("collect files");
+        assert_eq!(files.len(), 1);
+        assert!(files[0].ends_with("keep.tsx"));
+
+        let _ = fs::remove_dir_all(base);
+    }
+
+    #[test]
+    fn respects_double_star_ignore_patterns() {
+        let base = std::env::temp_dir().join(format!(
+            "axl_parser_glob_{}",
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("system clock should be after epoch")
+                .as_nanos()
+        ));
+        fs::create_dir_all(&base).expect("create test dir");
+        fs::write(base.join("keep.tsx"), "<div />").expect("write keep");
+        fs::write(base.join("skip.test.tsx"), "<div />").expect("write skip");
+
+        let input = vec![base.to_string_lossy().into_owned()];
+        let files = collect_lint_targets(&input, &["**/*.test.tsx".to_string()]).expect("collect files");
         assert_eq!(files.len(), 1);
         assert!(files[0].ends_with("keep.tsx"));
 
