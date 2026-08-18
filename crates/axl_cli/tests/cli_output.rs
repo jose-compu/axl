@@ -32,11 +32,12 @@ fn text_output_contains_expected_rules() {
         .output()
         .expect("axl_cli should run");
 
-    assert!(output.status.success());
+    assert_eq!(output.status.code(), Some(1));
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("roles/abstract-role-usage"));
     assert!(stdout.contains("naming/empty-accessible-name"));
     assert!(stdout.contains("focus/tabindex-positive"));
+    assert!(stdout.contains("  error  "));
 }
 
 #[test]
@@ -48,7 +49,7 @@ fn json_output_is_machine_readable() {
         .output()
         .expect("axl_cli should run");
 
-    assert!(output.status.success());
+    assert_eq!(output.status.code(), Some(1));
     let stdout = String::from_utf8_lossy(&output.stdout);
     let value: serde_json::Value = serde_json::from_str(&stdout).expect("json should parse");
     let array = value.as_array().expect("top-level must be an array");
@@ -66,7 +67,7 @@ fn only_filter_limits_categories() {
         .output()
         .expect("axl_cli should run");
 
-    assert!(output.status.success());
+    assert_eq!(output.status.code(), Some(1));
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("roles/abstract-role-usage"));
     assert!(!stdout.contains("naming/empty-accessible-name"));
@@ -98,7 +99,7 @@ fn only_filter_accepts_multiple_categories() {
         .output()
         .expect("axl_cli should run");
 
-    assert!(output.status.success());
+    assert_eq!(output.status.code(), Some(1));
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("roles/abstract-role-usage"));
     assert!(stdout.contains("focus/tabindex-positive"));
@@ -116,7 +117,7 @@ fn fix_flag_rewrites_positive_tabindex_and_reduces_problems() {
         .output()
         .expect("axl_cli should run");
 
-    assert!(output.status.success());
+    assert_eq!(output.status.code(), Some(1));
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("2 problems (2 errors, 0 warnings)."));
     assert!(stdout.contains("Autofix applied 1 changes across 1 files."));
@@ -157,7 +158,7 @@ fn fix_flag_with_json_output_keeps_json_machine_readable() {
         .output()
         .expect("axl_cli should run");
 
-    assert!(output.status.success());
+    assert_eq!(output.status.code(), Some(1));
     let stdout = String::from_utf8_lossy(&output.stdout);
     let value: serde_json::Value = serde_json::from_str(&stdout).expect("json should parse");
     let array = value.as_array().expect("top-level must be an array");
@@ -179,11 +180,34 @@ fn fix_flag_with_multiple_inputs_reports_aggregate_summary() {
         .output()
         .expect("axl_cli should run");
 
-    assert!(output.status.success());
+    assert_eq!(output.status.code(), Some(1));
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("2 files checked. 2 problems (2 errors, 0 warnings)."));
     assert!(stdout.contains("Autofix applied 1 changes across 1 files."));
 
     let _ = fs::remove_file(invalid);
     let _ = fs::remove_file(valid);
+}
+
+#[test]
+fn fix_dry_run_does_not_rewrite_files() {
+    let path = temp_fixture_copy("invalid_a11y.tsx");
+    let original = fs::read_to_string(&path).expect("original fixture should be readable");
+    let output = Command::new(env!("CARGO_BIN_EXE_axl_cli"))
+        .arg(&path)
+        .arg("--format")
+        .arg("text")
+        .arg("--fix-dry-run")
+        .output()
+        .expect("axl_cli should run");
+
+    assert_eq!(output.status.code(), Some(1));
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("Autofix would apply 1 changes across 1 files."));
+    assert!(stdout.contains("focus/tabindex-positive"));
+
+    let unchanged = fs::read_to_string(&path).expect("fixture should remain readable");
+    assert_eq!(unchanged, original);
+
+    let _ = fs::remove_file(path);
 }
