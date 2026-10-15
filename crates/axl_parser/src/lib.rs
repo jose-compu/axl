@@ -98,15 +98,15 @@ fn is_ignored(path: &Path, ignore_patterns: &[String]) -> bool {
 }
 
 fn matches_ignore_pattern(pattern: &str, path_str: &str, file_name: &str) -> bool {
-    if let Ok(compiled) = glob::Pattern::new(pattern) {
-        if compiled.matches(path_str) || compiled.matches(file_name) {
-            return true;
-        }
+    if let Ok(compiled) = glob::Pattern::new(pattern)
+        && (compiled.matches(path_str) || compiled.matches(file_name))
+    {
+        return true;
     }
-    if let Some(suffix) = pattern.strip_prefix("**/") {
-        if let Ok(compiled) = glob::Pattern::new(suffix) {
-            return compiled.matches(path_str) || compiled.matches(file_name);
-        }
+    if let Some(suffix) = pattern.strip_prefix("**/")
+        && let Ok(compiled) = glob::Pattern::new(suffix)
+    {
+        return compiled.matches(path_str) || compiled.matches(file_name);
     }
     false
 }

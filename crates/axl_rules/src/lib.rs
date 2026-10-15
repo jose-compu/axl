@@ -34,6 +34,10 @@ fn registry() -> Vec<Box<dyn Rule>> {
     vec![
         Box::new(roles::abstract_role_usage::AbstractRoleUsageRule),
         Box::new(naming::empty_accessible_name::EmptyAccessibleNameRule),
+        Box::new(naming::img_missing_alt::ImgMissingAltRule),
+        Box::new(naming::button_missing_name::ButtonMissingNameRule),
+        Box::new(naming::link_missing_name::LinkMissingNameRule),
+        Box::new(naming::svg_missing_name::SvgMissingNameRule),
         Box::new(focus::tabindex_positive::TabindexPositiveRule),
     ]
 }
@@ -55,7 +59,13 @@ mod tests {
         };
 
         let result = lint_file(&file, None);
-        assert_eq!(result.diagnostics.len(), 3);
+        assert_eq!(result.diagnostics.len(), 4);
+        assert!(
+            result
+                .diagnostics
+                .iter()
+                .any(|d| d.rule_id == "naming/button-missing-name")
+        );
     }
 
     #[test]
@@ -64,7 +74,7 @@ mod tests {
             path: "fixture.tsx".to_string(),
             source: r#"
                 <div role="widget" />
-                <button aria-label="   " tabIndex={3} />
+                <button aria-label="   " tabIndex={3}>Go</button>
             "#
             .to_string(),
         };
@@ -81,7 +91,7 @@ mod tests {
             path: "fixture.tsx".to_string(),
             source: r#"
                 <div role="widget" />
-                <button aria-label="   " tabIndex={3} />
+                <button aria-label="   " tabIndex={3}>Go</button>
             "#
             .to_string(),
         };
@@ -89,6 +99,54 @@ mod tests {
 
         let result = lint_file(&file, Some(&only));
         assert!(result.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn naming_rules_cover_labelledby_aria_label_img_alt_and_button_text() {
+        let file = LintFile {
+            path: "accname.tsx".to_string(),
+            source: r#"
+                <section>
+                  <span id="by-id">Name from labelledby</span>
+                  <button aria-labelledby="by-id" aria-label="ignored">ignored</button>
+                  <button aria-label="Name from aria-label">ignored</button>
+                  <img src="/logo.png" alt="Name from alt" />
+                  <button>Name from button text</button>
+                </section>
+            "#
+            .to_string(),
+        };
+
+        let result = lint_file(&file, Some(&["naming".to_string()]));
+        assert!(
+            result.diagnostics.is_empty(),
+            "{:?}",
+            result.diagnostics
+        );
+    }
+
+    #[test]
+    fn naming_rules_report_img_button_link_and_svg_gaps() {
+        let file = LintFile {
+            path: "invalid_naming.tsx".to_string(),
+            source: r#"
+                <section>
+                  <img src="/x.png" />
+                  <button></button>
+                  <a href="/go"></a>
+                  <svg></svg>
+                </section>
+            "#
+            .to_string(),
+        };
+
+        let result = lint_file(&file, Some(&["naming".to_string()]));
+        let ids: Vec<_> = result.diagnostics.iter().map(|d| d.rule_id).collect();
+        assert!(ids.contains(&"naming/img-missing-alt"));
+        assert!(ids.contains(&"naming/button-missing-name"));
+        assert!(ids.contains(&"naming/link-missing-name"));
+        assert!(ids.contains(&"naming/svg-missing-name"));
+        assert_eq!(result.diagnostics.len(), 4);
     }
 
     #[test]
