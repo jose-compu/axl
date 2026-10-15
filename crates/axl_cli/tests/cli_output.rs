@@ -1,6 +1,9 @@
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
+use std::sync::atomic::{AtomicU64, Ordering};
+
+static TEMP_SEQ: AtomicU64 = AtomicU64::new(0);
 
 fn fixture_path(name: &str) -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -12,8 +15,9 @@ fn fixture_path(name: &str) -> PathBuf {
 fn temp_fixture_copy(name: &str) -> PathBuf {
     let source = fixture_path(name);
     let path = std::env::temp_dir().join(format!(
-        "axl_cli_fixture_{}_{}.tsx",
+        "axl_cli_fixture_{}_{}_{}.tsx",
         std::process::id(),
+        TEMP_SEQ.fetch_add(1, Ordering::Relaxed),
         std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .expect("system time should be after epoch")
@@ -210,4 +214,55 @@ fn fix_dry_run_does_not_rewrite_files() {
     assert_eq!(unchanged, original);
 
     let _ = fs::remove_file(path);
+}
+
+#[test]
+fn accname_fixture_has_no_naming_problems() {
+    let output = Command::new(env!("CARGO_BIN_EXE_axl_cli"))
+        .arg(fixture_path("accname.tsx"))
+        .arg("--format")
+        .arg("text")
+        .arg("--only")
+        .arg("naming")
+        .output()
+        .expect("axl_cli should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    println!("{stdout}");
+    assert!(stdout.contains("0 problems (0 errors, 0 warnings)."));
+}
+
+#[test]
+fn valid_naming_fixture_has_no_problems() {
+    let output = Command::new(env!("CARGO_BIN_EXE_axl_cli"))
+        .arg(fixture_path("valid_naming.tsx"))
+        .arg("--format")
+        .arg("text")
+        .output()
+        .expect("axl_cli should run");
+
+    assert!(output.status.success());
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    println!("{stdout}");
+    assert!(stdout.contains("0 problems (0 errors, 0 warnings)."));
+}
+
+#[test]
+fn invalid_naming_fixture_reports_new_rules() {
+    let output = Command::new(env!("CARGO_BIN_EXE_axl_cli"))
+        .arg(fixture_path("invalid_naming.tsx"))
+        .arg("--format")
+        .arg("text")
+        .output()
+        .expect("axl_cli should run");
+
+    assert_eq!(output.status.code(), Some(1));
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    println!("{stdout}");
+    assert!(stdout.contains("naming/img-missing-alt"));
+    assert!(stdout.contains("naming/button-missing-name"));
+    assert!(stdout.contains("naming/link-missing-name"));
+    assert!(stdout.contains("naming/svg-missing-name"));
+    assert!(stdout.contains("4 problems (4 errors, 0 warnings)."));
 }

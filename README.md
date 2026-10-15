@@ -1,24 +1,32 @@
 # axl
 
-`axl` is a Rust workspace for accessibility linting of JSX/TSX code.
+[![crates.io](https://img.shields.io/crates/v/axl_cli.svg)](https://crates.io/crates/axl_cli)
 
-Current v0.3 focus:
-- runnable CLI (`axl_cli`)
-- parser/discovery pipeline (`axl_parser`)
-- shared diagnostics/rule engine interfaces (`axl_core`)
-- initial ARIA/name/focus rules (`axl_rules`, `axl_aria`)
-- early contrast and pattern analysis scaffolding (`axl_contrast`, `axl_patterns`)
+`axl` is a Rust workspace for accessibility linting of JSX/TSX code. **v0.4.0** is on crates.io.
+
+Current v0.4 focus:
+- AccName 1.2 subset in `axl_aria` (same-file traversal and precedence)
+- additional naming rules consumed from that algorithm
+- existing roles and focus rules unchanged
+- runnable CLI, parser/discovery, shared diagnostics, contrast/pattern scaffolds
 
 ## Workspace crates
 
 - `axl_cli`: command line entry point and output formatting
 - `axl_parser`: TSX/JSX target collection and OXC parse validation
 - `axl_core`: shared lint data model (`Diagnostic`, `Rule`, `Severity`, etc.)
-- `axl_aria`: ARIA role and accessible-name helpers
+- `axl_aria`: ARIA roles plus AccName 1.2 subset (`name_computation`, JSX tree)
 - `axl_rules`: active lint rules and rule registry
 - `axl_config`: `axl.config.json` loading
 - `axl_contrast`: WCAG contrast math and color helpers (scaffold)
 - `axl_patterns`: UI pattern detector API + dialog placeholder (scaffold)
+
+## Install
+
+```bash
+cargo install axl_cli --locked
+axl .
+```
 
 ## Quick start
 
@@ -71,17 +79,34 @@ Preview autofix without writing files:
 cargo run -p axl_cli -- . --fix-dry-run
 ```
 
+## AccName 1.2 subset (v0.4)
+
+Same-file computation in `axl_aria::name_computation`, in spec order:
+
+1. `aria-labelledby` (ID references in the same file; recursion guards)
+2. `aria-label`
+3. native `<label>` (`htmlFor`/`for` or wrapping)
+4. name from content
+5. `alt`
+6. `title`
+
+Whitespace is normalized. Dynamic JSX expressions are treated as unknown (not empty) so rules do not false-positive. Empty `aria-label` falls through; a present empty `alt` on `img` does not fall through to `title`.
+
 ## Current implemented rules
 
 - `roles/abstract-role-usage` (error)
 - `naming/empty-accessible-name` (error)
+- `naming/img-missing-alt` (error)
+- `naming/button-missing-name` (error)
+- `naming/link-missing-name` (error)
+- `naming/svg-missing-name` (error)
 - `focus/tabindex-positive` (warning)
 
 ## Configuration
 
 `axl` loads `axl.config.json` by default (or the file from `--config`).
 
-Supported top-level fields (minimal v0.3 support):
+Supported top-level fields (minimal v0.4 support):
 - `extends`: string array
 - `components`: object map
 - `rules`: object map
@@ -102,10 +127,10 @@ Example:
 }
 ```
 
-## Scope limitations (v0.3)
+## Scope limitations (v0.4)
 
-- no full AccName 1.2 implementation
-- no context-dependent implicit role algorithm
-- no CSS parsing/resolution
+- AccName 1.2 is a same-file subset, not the full specification
+- no complete implicit-role algorithm
+- no CSS parsing/resolution (`:before`/`visibility`/`display`)
 - no cross-file component tree analysis
 - limited autofix scope (currently `focus/tabindex-positive` only)
